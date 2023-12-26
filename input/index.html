@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Categories Puzzle Editor</title>
+  <meta property="og:title" content="Categories Puzzle Editor" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+
+  <style>
+    .selection-square {
+      pointer-events: none !important;
+      width: 200px !important;
+      height: 200px !important;
+      max-width: 200px !important;
+      max-height: 200px !important;
+      background-color: #fff0;
+      border: 5px solid #f007;
+      z-index: 999 !important;
+    }
+
+    .btn-3d {
+      position: relative;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-3d:active {
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- templates for each input row -->
+  <template id="inputRowTemplate">
+    <div id="" class="container-sm justify-content-center align-content-center mt-4 border-bottom border-danger border-5 p-3">
+      <div class="row justify-content-center">
+        <span id="GroupName" class="text-center fw-bold fs-3 text-danger">Group</span>
+      </div>
+      <div class="row justify-content-center">
+        <div id="keywords" class="row justify-content-center mt-1">
+          <span class="text-md-start fw-bold">
+            Comma Seperated List of Acceptable Answers:
+          </span>
+          <div class="row justify-content-center mt-1">
+            <input id="" type="text" class="form-control border border-black"
+              placeholder="Answer keywords e.g. fun,sil,hap (funny,silly,happy)" />
+          </div>
+        </div>
+        <div id="solution" class="row justify-content-center">
+          <span class="text-md-start fw-bold"> Group Solution: </span>
+          <div class="row justify-content-center mt-1">
+            <textarea id="" class="form-control border border-black" placeholder="Group Solution" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="row justify-content-center mt-2">
+        <div class="row justify-content-center">
+          <span class="text-md-start fw-bold">Items:</span>
+        </div>
+        <div id="items" class="row justify-content-center"></div>
+      </div>
+    </div>
+  </template>
+
+  <template id="inputItemTemplate">
+    <div class="col-sm h-auto" id="itemContainer">
+      <textarea class="form-control imginput border border-black bg-dark text-white fw-bold fs-4" ondblclick="openFileDialog()" id=""
+        maxlength="80" wrap="hard" style="height: auto; resize: none"></textarea>
+    </div>
+  </template>
+
+  <template id="addDelItemTemplate">
+    <div class="col-sm justify-content-center align-content-center" id="addDelItem" style="max-width: 15%">
+      <div class="row d-flex justify-content-center align-content-center">
+        <button type="button" id="addItem" class="btn btn-primary border border-secondary"
+          onclick="addInputItemByButton()" width="100%">
+          Add New Item
+        </button>
+      </div>
+      <div class="row d-flex justify-content-center align-content-center">
+        <button type="button" id="delItem" class="btn btn-secondary border border-primary"
+          onclick="delInputItemByButton()" width="100%">
+          Remove Item
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <template id="addDelRowTemplate">
+    <div class="container-sm justify-content-center align-content-center p-4" id="addDelRow">
+      <div class="row d-flex justify-content-center align-content-center">
+        <div class="col-md d-flex justify-content-center align-content-center">
+          <button type="button" id="addRow" class="btn btn-primary border border-secondary flex-fill"
+            onclick="addRowByButton()" width="100%">
+            Add New Row
+          </button>
+        </div>
+        <div class="col-md d-flex justify-content-center align-content-center">
+          <button type="button" id="delRow" class="btn btn-secondary border border-primary flex-fill"
+            onclick="delRowByButton()" width="100%">
+            Remove Row
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="imageLoaderTemplate">
+    <div class="container-fluid justify-content-center align-content-center" id="imgloader" style="position: absolute; background-color: rgba(0, 0, 0, 0.5); top: 0; left: 0; height: 100vh;" ;>
+      <div class="row d-flex justify-content-center align-content-center" id="imgokaycancel">
+        <div class="col-sm-6 d-flex w-25 justify-content-center align-content-center" id="imgokay">
+          <button type="button" class="w-25 btn btn-3d btn-primary flex-grow-1" onclick="hideImageLoader()" width="100%" style="z-index: 1002">Okay</button>
+        </div>
+        <div class="col-sm-6 d-flex w-25 justify-content-center align-content-center" id="imgcancel">
+          <button type="button" class="w-25 btn btn-3d btn-secondary flex-grow-1" onclick="hideImageLoader()" width="100%" style="z-index: 1001">Cancel</button>
+        </div>
+      </div>
+      <div class="row d-flex h-100 justify-content-center align-content-center" style="background-color: rgba(0, 0, 0, 0.5)">
+        <div class="row d-flex h-100 justify-content-center align-content-center" style="position: relative; max-width: 100%; max-height: 100%">
+          <div class="selection-square d-flex justify-content-center align-content-center" id="imgselection">
+            <span class="fw-bold" style="pointer-events: none" id="imgselectiontext">This is the area for selection</span>
+          </div>
+          <img class="d-flex flex-shrink-1" id="imgdisplay" draggable="false" onmousedown="imageMouseDownEventHandler()" onmouseup="imageMouseUpEventHandler()"/>
+        </div>
+      </div>
+    </div>
+  </template>
+</head>
+
+<body>
+  <div class="container-sm justify-content-center align-content-center" style="max-width: 1000px">
+    <div id="categories" class="row justify-content-center">
+      <div class="row justify-content-center">
+        <span class="text-center fw-bold fs-1">
+          <span>Please Input Connecting Elements For Each Group</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+  <script>
+    function addInputItem(Parent) {
+      if (Parent == null) {
+        return;
+      }
+
+      var groupNumber = parseInt(Parent.id.match(/\d/g).join(""));
+      if (groupNumber == undefined) {
+        return;
+      }
+
+      var itemNumber = Parent.children.length;
+
+      const itemTemplate = document
+        .getElementById("inputItemTemplate")
+        .content.cloneNode(true);
+
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(itemTemplate);
+      fragment.querySelector("textarea").id = `item${groupNumber}${itemNumber}`;
+      // removing for now because blocks images
+      //fragment.querySelector("textarea").placeholder = `Group: ${groupNumber} Item: ${itemNumber}`;
+
+      // add the new fragment
+      Parent.appendChild(fragment);
+    }
+
+    function delInputItem(Parent) {
+      if (Parent == null) {
+        return;
+      }
+      var groupNumber = parseInt(Parent.id.match(/\d/g).join(""));
+      if (groupNumber == undefined) {
+        return;
+      }
+      var items = Parent.children.length;
+      var item = Parent.querySelector(`#item${groupNumber}${items - 2}`);
+      // need to remove the container for the item as well
+      Parent.removeChild(item.parentNode);
+    }
+
+    function addItemButtons(Parent) {
+      if (Parent == null) {
+        return;
+      }
+
+      const addItemTemplate = document
+        .getElementById("addDelItemTemplate")
+        .content.cloneNode(true);
+      Parent.appendChild(addItemTemplate);
+    }
+
+    function delInputItemByButton() {
+      buttonContainer = event.target.parentNode.parentNode;
+      parent = buttonContainer.parentNode;
+
+      var itemCount = parent.children.length;
+
+      // 2 items minimum and 1 set of buttons == 3
+      if (itemCount <= 3) return;
+
+      // query for all input rows
+      var inputRows = document.body.querySelectorAll('[id$="-items"]');
+      inputRows.forEach((currentRow) => {
+        delInputItem(currentRow);
+      });
+    }
+
+    function addInputItemByButton() {
+      buttonContainer = event.target.parentNode.parentNode;
+      parent = buttonContainer.parentNode;
+
+      var itemCount = parent.children.length;
+
+      if (itemCount >= 6) return;
+
+      // query for all input rows
+      var inputRows = document.body.querySelectorAll('[id$="-items"]');
+      inputRows.forEach((currentRow) => 
+      {
+        buttonContainer = currentRow.querySelector('[id="addDelItem"]');
+        //remove the button object
+        currentRow.removeChild(buttonContainer);
+        //add new input item
+        addInputItem(currentRow);
+        //add input add/remove buttons
+        addItemButtons(currentRow);
+      });
+    }
+
+    function delInputRow(Parent) {
+      if (Parent == null) {
+        console.log("delInputRow: missing parent");
+        return;
+      }
+
+      var rows = Parent.querySelectorAll('[id^="group-"]');
+
+      if (rows == null || rows.length < 3) {
+        return;
+      }
+
+      rows[rows.length - 1].parentNode.removeChild(rows[rows.length - 1]);
+    }
+
+    function addInputRow(Parent) {
+      if (Parent == null) {
+        console.log("addInputRow: missing parent");
+        return;
+      }
+
+      /* find group 1 and match the number of items in the group, if it doesn't exist then default to having 3 items in the group */
+      var allGroups = Parent.querySelectorAll('[id^="group"][id$="parent"]');
+      var initialGroup = allGroups[0];
+      var groupNumber = allGroups.length;
+      var itemCount = 3;
+
+      if (initialGroup) {
+        itemCount =
+          initialGroup.querySelector('[id$="-items"]').children.length - 1;
+      }
+
+      // Get the template element
+      const template = document.getElementById("inputRowTemplate");
+
+      // Create a DocumentFragment to hold the final content
+      const fragment = document.createDocumentFragment();
+      // Clone the content of #inputRowTemplate
+      fragment.appendChild(template.content.cloneNode(true));
+
+      // Define a prefix for generated IDs
+      const idPrefix = "group";
+
+      // Update elements with generated IDs
+      fragment.querySelector(".container-sm").id = `${idPrefix}-${groupNumber}-parent`;
+      fragment.querySelector("#items").id = `${idPrefix}-${groupNumber}-items`;
+      fragment.querySelector("textarea").id = `${idPrefix}-${groupNumber}-solution`;
+      fragment.querySelector("input").id = `${idPrefix}-${groupNumber}-keywords`;
+
+      // Update any group specific display items
+      fragment.querySelector("#GroupName").textContent = `${idPrefix} ${groupNumber}`;   
+
+      // Get the element where you want to insert #inputItemTemplate content
+      const itemsContainer = fragment.querySelector(`#${idPrefix}-${groupNumber}-items`);
+
+      // Append the #inputItemTemplate content to the #items container within the fragment
+      for (item = 0; item < itemCount; item++) {
+        addInputItem(itemsContainer);
+      }
+      addItemButtons(itemsContainer);
+
+      // Append the modified fragment to the #categories element
+      Parent.appendChild(fragment);
+    }
+
+    function delRowByButton() {
+      var groups = document.getElementById("categories").querySelectorAll('[id^="group"][id$="parent"]');
+
+      if (groups == null || groups.length < 3) {
+        return;
+      }
+
+      // nicety to scroll down
+      const newRow = groups[groups.length - 2];
+      newRow.scrollIntoView({ behavior: "smooth", block: "end" });
+
+      groups[groups.length - 1].parentNode.removeChild(groups[groups.length - 1]);
+    }
+
+    function addRowByButton() {
+      var parent = document.getElementById("categories");
+      var buttonsContainer = parent.querySelector("#addDelRow");
+
+      var groups = parent.querySelectorAll('[id^="group-"][id$="parent"]');
+      if (groups != null && groups.length >= 5) {
+        return;
+      }
+
+      parent.removeChild(buttonsContainer);
+      addInputRow(parent);
+      addRowButtons(parent);
+
+      // nicety to scroll down
+      //groups = parent.querySelectorAll('[id^="group-"][id$="parent"]');
+      //const newRow = groups[groups.length - 1];
+      const addDelRows = parent.querySelector("#addDelRow");
+      addDelRows.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+
+    function addRowButtons(Parent) {
+      if (Parent == null) {
+        return;
+      }
+
+      const addItemTemplate = document.getElementById("addDelRowTemplate").content.cloneNode(true);
+      Parent.appendChild(addItemTemplate);
+    }
+
+    function resetImageDisplay(url) {
+      const imgDisplay = document.getElementById("imgdisplay");
+      imgDisplay.src = url.target.result; //set the image from the url
+      imgDisplay.style.position = "absolute";
+      imgDisplay.style.top = "50%";
+      imgDisplay.style.left = "50%";
+      imgDisplay.style.width = "auto";
+      imgDisplay.style.height = "auto";
+      imgDisplay.style.transform = "translate(-50%, -50%)";
+      imgDisplay.style.zIndex = 100;
+      imgDisplay.addEventListener("wheel", imageMouseWheelEventHandler);
+    }
+
+    function cleanupImageDisplay() {
+      document.getElementById("imgdisplay").removeEventListener("wheel", imageMouseWheelEventHandler);
+    }
+
+    function setSelectedImageFromLoader() {
+      const srcElement = document.getElementById("imgdisplay");
+      const srcSelect = document.getElementById("imgselection");
+      const targetId = document.getElementById("imgloader").dataset.target;
+      const dstElement = document.getElementById(targetId);
+      copyImageRegionToBackground(srcElement, srcSelect, dstElement);
+    }
+
+    function hideImageLoader() {
+      setSelectedImageFromLoader();
+      cleanupImageDisplay();
+      document.body.removeChild(document.getElementById("imgloader"));
+    }
+
+    function showImageLoader(url, target) {
+      // Get the template element
+      const template = document.getElementById("imageLoaderTemplate");
+      // Create a DocumentFragment to hold the final content
+      const fragment = document.createDocumentFragment();
+      // Clone the content of #inputRowTemplate
+      fragment.appendChild(template.content.cloneNode(true));
+      document.body.appendChild(fragment);
+      document.getElementById("imgloader").dataset.target = target;
+      resetImageDisplay(url);
+    }
+
+    function startImageTranslate(event) {
+      var image = event.target;
+
+      if (event.target.dataset.moving == true) {
+        document.removeEventListener("mousemove", imageMouseMoveEventHandler);
+        event.target.dataset.moving = false;
+        return;
+      }
+
+      image.dataset.imageleft = image.offsetLeft;
+      image.dataset.imagetop = image.offsetTop;
+
+      document.addEventListener("mousemove", imageMouseMoveEventHandler);
+      event.target.dataset.moving = true;
+    }
+
+    function stepImageTranslate(event) {
+      var image = event.target;
+
+      var startX = parseInt(image.dataset.startX);
+      var startY = parseInt(image.dataset.startY);
+
+      var newX = event.clientX - startX;
+      var newY = event.clientY - startY;
+
+      var imageLeft = parseInt(image.dataset.imageleft);
+      var imageTop = parseInt(image.dataset.imagetop);
+
+      image.style.left = imageLeft + newX + "px";
+      image.style.top = imageTop + newY + "px";
+      console.log("Old Coord: (" + imageLeft + "," + imageTop + ") New Coord: (" + image.style.left + "," + image.style.top + ")");
+    }
+
+    function startImageRotate(event) {
+      var image = event.target;
+
+      if (event.target.dataset.rotating == true) {
+        document.removeEventListener("mousemove", imageMouseMoveEventHandler);
+        event.target.dataset.rotating = false;
+        return;
+      }
+      const srcRect = image.getBoundingClientRect();
+
+      if (image.dataset.rotation == null) {
+        image.dataset.rotation = 0;
+        console.log("startImageRotate: reset rotation to '0'");
+      }
+
+      document.addEventListener("mousemove", imageMouseMoveEventHandler);
+      event.target.dataset.rotating = true;
+    }
+
+    function stepImageRotate(event) {
+      var image = event.target;
+
+      var startX = parseInt(image.dataset.startX);
+      image.dataset.startX = event.clientX;
+
+      var rotateX =
+        parseInt(image.dataset.rotation) + (startX - event.clientX);
+
+      var currentTransform = image.style.transform || "";
+      if (!currentTransform.includes("rotate")) {
+        currentTransform += " rotate(0deg)"; // Set initial rotation to 1 if not defined
+      }
+
+      rotateX = rotateX % 360; // reverse direction to be 'intuitive'
+
+      const newTransform = currentTransform.replace(/rotate\(.*\)/,`rotate(${rotateX}deg)`); // Apply the new scale factor
+      image.style.transform = newTransform; // Update the transform property
+      image.dataset.rotation = rotateX;
+
+      console.log("StartX: (" + startX + ") clientX (" + event.clientX + ") RotateX (" + rotateX + ")");
+    }
+
+    function getScaleFactor(scale) {
+      const scaleFactorMatch = scale.match(/scale\((\d+\.\d+|\d+)\)/);
+      if (!scaleFactorMatch) {
+        return 1;
+      }
+      return parseFloat(scaleFactorMatch[1]);
+    }
+
+    function imageMouseDownEventHandler() {
+      var ctrl = event.target;
+
+      ctrl.dataset.startX = event.clientX;
+      ctrl.dataset.startY = event.clientY;
+
+      ctrl.dataset.mousebutton = event.button;
+
+      switch (ctrl.dataset.mousebutton) {
+        case "0":
+          startImageTranslate(event);
+          break;
+        case "2":
+          startImageRotate(event);
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    }
+
+    function imageMouseMoveEventHandler(event) {
+      var ctrl = event.target;
+
+      if (ctrl == null || ctrl.dataset == null) return;
+
+      switch (ctrl.dataset.mousebutton) {
+        case "0":
+          stepImageTranslate(event);
+          break;
+        case "2":
+          stepImageRotate(event);
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    }
+
+    function imageMouseUpEventHandler(event) {
+      var ctrl = document.getElementById("imgdisplay");
+      document.removeEventListener("mousemove", imageMouseMoveEventHandler);
+      ctrl.dataset.mousebutton = -1;
+      ctrl.dataset.moving = false;
+      ctrl.dataset.rotating = false;
+    }
+
+    function imageMouseWheelEventHandler() {
+      var image = event.target;
+      const deltaY = event.deltaY; // Get the scroll delta
+      const scaleFactor = deltaY > 100 ? 0.02 : -0.02; // Calculate the scale factor
+      //const currentTransform = image.style.transform || 'scale(1)'; // Get the current transform
+      // Check if the current transform doesn't contain 'scale' value
+
+      var currentTransform = image.style.transform || "";
+      if (!currentTransform.includes("scale")) {
+        currentTransform += " scale(1)"; // Set initial scale to 1 if not defined
+      }
+      const currentScale = getScaleFactor(currentTransform);
+
+      if (
+        (currentScale < 0.05 && deltaY < 0) ||
+        (currentScale >= 95 && deltaY > 0)
+      ) {
+        event.preventDefault();
+        return;
+      }
+      const newTransform = currentTransform.replace(/scale\(.*\)/, `scale(${currentScale + scaleFactor})` ); // Apply the new scale factor
+      image.style.transform = newTransform; // Update the transform property
+      //console.log("Transform: " + newTransform + " Old Transform: " + currentTransform);
+      //console.log("deltaY: " + deltaY + " scaleFactor: " + (currentScale + scaleFactor));
+      event.preventDefault();
+    }
+
+    function getTransformMatrix(element) {
+      const computedStyle = getComputedStyle(element);
+      const transformString = computedStyle.transform;
+
+      // Extract the matrix values from the transform string
+      const lValues = transformString.match(/matrix\((.*?)\)/)[1].split(",");
+      const matrix = new DOMMatrix(lValues);
+
+      matrix.e = 0;
+      matrix.f = 0;
+
+      return matrix;
+    }
+
+    // from sabof on StackOverflow.com
+    function rotatePoint(pivot, point, angle) {
+      // Rotate clockwise, angle in radians
+      var x = Math.round(
+        Math.cos(angle) * (point[0] - pivot[0]) -
+        Math.sin(angle) * (point[1] - pivot[1]) +
+        pivot[0]
+      );
+      var y = Math.round(
+        Math.sin(angle) * (point[0] - pivot[0]) +
+        Math.cos(angle) * (point[1] - pivot[1]) +
+        pivot[1]
+      );
+      return [x, y];
+    }
+
+    function getTopLeftCorner(dimensions, angle) {
+      var cornerTL = rotatePoint([0, 0], [0, 0], angle);
+      var cornerTR = rotatePoint([0, 0], [dimensions[0], 0], angle);
+      var cornerBL = rotatePoint([0, 0], [0, dimensions[1]], angle);
+      var cornerBR = rotatePoint(
+        [0, 0],
+        [dimensions[0], dimensions[1]],
+        angle
+      );
+      var left = dimensions[0] * 2;
+      var top = dimensions[1] * 2;
+
+      left = Math.min(left, cornerTL[0]);
+      left = Math.min(left, cornerTR[0]);
+      left = Math.min(left, cornerBL[0]);
+      left = Math.min(left, cornerBR[0]);
+      top = Math.min(top, cornerTL[1]);
+      top = Math.min(top, cornerTR[1]);
+      top = Math.min(top, cornerBL[1]);
+      top = Math.min(top, cornerBR[1]);
+
+      console.log("cornerTL: " + cornerTL);
+      console.log("cornerBL: " + cornerBL);
+      console.log("cornerBR: " + cornerBR);
+      console.log("cornerTR: " + cornerTR);
+
+      console.log("left,top: ", +left + "," + top);
+
+      return [left, top];
+    }
+
+    function copyImageRegionToBackground(SrcImageElement, SrcSelectionElement, DstElement) {
+      if (SrcImageElement == null || SrcSelectionElement == null || DstElement == null) {
+        return;
+      }
+      // get absolute locations of img against sel rect to do relative comparison to select the right region in the image
+      const srcRect = SrcImageElement.getBoundingClientRect();
+      const selRect = SrcSelectionElement.getBoundingClientRect();
+      console.log("srcRect: " + srcRect);
+      console.log("selRect: " + selRect);
+
+      // get the transformation matrix
+      var matrix = getTransformMatrix(SrcImageElement);
+      console.log("Matrix: " + matrix);
+
+      // get the scaling information
+      var scaleX = Math.sqrt(matrix.a * matrix.a + matrix.b * matrix.b);
+      var scaleY = Math.sqrt(matrix.c * matrix.c + matrix.d * matrix.d);
+      console.log("Scale(x,y): (" + scaleX + "," + scaleY + ")");
+
+      // get rotation information
+      var rotation =
+        matrix.b > 0
+          ? Math.acos(matrix.a / scaleX)
+          : -Math.acos(matrix.a / scaleX);
+      console.log("Rotation: " + (rotation * 180) / Math.PI + "deg");
+
+      // get the source rect width and height (this is affected by hidden calculations not visible in the matrix)
+      var width =
+        (1 /
+          (Math.cos(rotation) * Math.cos(rotation) -
+            Math.sin(rotation) * Math.sin(rotation))) *
+        (srcRect.width * Math.cos(rotation) -
+          srcRect.height * Math.sin(rotation));
+      var height =
+        (1 /
+          (Math.cos(rotation) * Math.cos(rotation) -
+            Math.sin(rotation) * Math.sin(rotation))) *
+        (-srcRect.width * Math.sin(rotation) +
+          srcRect.height * Math.cos(rotation));
+      console.log("Width: " + width + " Height: " + height);
+
+      // get 'true' scale from the original image size
+      var scaleXX = width / SrcImageElement.naturalWidth;
+      var scaleYY = height / SrcImageElement.naturalHeight;
+      console.log(
+        "True Scale(x,y): (" + scaleXX + " Height: " + scaleYY + ")"
+      );
+
+      // get the padding from the image element
+      const srcPaddingWidth = parseInt(window.getComputedStyle(SrcImageElement).getPropertyValue("padding-left"));
+      const padLeft = Math.round(Math.cos(rotation) * srcPaddingWidth);
+      const padTop = Math.round(Math.sin(rotation) * srcPaddingWidth);
+      console.log("Padding: " + srcPaddingWidth + " padLeft: " + padLeft + " padTop: " + padTop);
+
+      // determine the offset using the outlined 'selection' element against where the image is relatively
+      const offsetX = Math.round(selRect.left - srcRect.left + padLeft);
+      const offsetY = Math.round(selRect.top - srcRect.top + padTop);
+      console.log("Offset: " + offsetX + "," + offsetY);
+
+      // get the new top left point to translate from
+      const topLeft = getTopLeftCorner([width, height], rotation);
+      const translateX = topLeft[0] < 0 ? Math.abs(topLeft[0]) : 0;
+      const translateY = topLeft[1] < 0 ? Math.abs(topLeft[1]) : 0;
+      console.log( "TopLeftCorner: " + topLeft + " translateX: " + translateX + " translateY: " + translateY);
+
+      // create canvas to copy from the source img
+      const dstCanvas = document.createElement("canvas");
+      dstCanvas.width = srcRect.width; //SrcImageElement.width;
+      dstCanvas.height = srcRect.height; //SrcImageElement.height;
+      const dstCtx = dstCanvas.getContext("2d");
+
+      // fill the canvas for debug purposes (probably not necessary if everything always works right)
+      dstCtx.fillStyle = "rgba(0, 0, 0, 0)";
+      dstCtx.fillRect(0, 0, dstCanvas.width, dstCanvas.height);
+
+      // set the proper parameters to get the source image
+      // TODO: do more math to only copy just the specific region
+      //       instead of the entire image to avoid unnecessary
+      //       scaling (cpu / gpu waste)
+      dstCtx.translate(translateX, translateY);
+      dstCtx.rotate(rotation);
+      dstCtx.scale(scaleXX, scaleYY);
+
+      // draw the from the src element and apply all the previous transforms
+      dstCtx.drawImage(SrcImageElement, 0, 0);
+
+      /* DEBUG: highlight the target area for 'collecting' */
+      // dstCtx.resetTransform();
+      // dstCtx.fillStyle = "rgba(255,0,0,0.5)";
+      // dstCtx.fillRect(offsetX, offsetY, selRect.width, selRect.height);
+      
+      /* DEBUG: output of image information as base64 */
+      //console.log(dstCanvas.toDataURL("image/png"));
+
+      // select the scaled and specific region within the src image to be saved / used
+      const dstImageData = dstCtx.getImageData(offsetX, offsetY, 200, 200);
+      // get the specific data
+      createImageBitmap(dstImageData)
+        .then((imageBitmap) => {
+          // create a 'smaller' canvas to 'convert' the bitmap image to a useable format (cannot directly create)
+          const rndCanvas = document.createElement("canvas");
+          rndCanvas.width = imageBitmap.width;
+          rndCanvas.height = imageBitmap.height;
+          const rndCtx = rndCanvas.getContext("2d");
+          // draw the bitmap to another canvas in order to create a data URL to transfer to another element
+          rndCtx.drawImage(imageBitmap, 0, 0);
+          // Process the ImageBitmap here
+          const imgURL = rndCanvas.toDataURL("image/png");
+          //console.log('Image URL:', imgURL);
+          // Append the imageElement to the desired location in the DOM
+          DstElement.style.backgroundRepeat = "no-repeat";
+          DstElement.style.backgroundPosition = "center center";
+          DstElement.style.backgroundSize = "contain";
+          DstElement.style.backgroundImage = "url(" + imgURL + ")";
+
+          // make sure the item is cleaned up
+          imageBitmap.close();
+        })
+        .catch((error) => {
+          // Handle the error here
+          console.error("Error creating ImageBitmap:", error);
+        });
+    }
+
+    function imageTouchStartEventHandler() {
+      var image = event.target;
+      var touch1 = event.touches[0];
+      var touch2 = event.touches[1];
+
+      var startDistance = Math.sqrt(Math.pow(touch1.clientX - touch2.clientX, 2) + Math.pow(touch1.clientY - touch2.clientY, 2));
+
+      var touchMoveHandler = function (event) {
+        var touch3 = event.touches[0];
+        var touch4 = event.touches[1];
+        var newDistance = Math.sqrt(Math.pow(touch3.clientX - touch4.clientX, 2) + Math.pow(touch3.clientY - touch4.clientY, 2));
+        var scale = newDistance / startDistance;
+        image.style.transform = "scale(" + scale + ")";
+      };
+
+      document.addEventListener("touchmove", touchMoveHandler);
+
+      var touchEndHandler = function (event) {
+        document.removeEventListener("touchmove", touchMoveHandler);
+      };
+
+      document.addEventListener("touchend", touchEndHandler);
+    }
+
+    function openFileDialog() {
+      var source = event.target;
+      var input = document.createElement("input");
+      input.type = "file";
+      input.onchange = function () {
+        if (input.files && input.files[0]) {
+          var reader = new FileReader();
+          reader.onload = function (url) {
+            showImageLoader(url, source.id);
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      };
+      input.click();
+    }
+
+    /****************************************************************
+     ***************** Start Of Running Functions ********************
+     ****************************************************************/
+
+    var parent = document.getElementById("categories");
+    addInputRow(parent);
+    addInputRow(parent);
+    addRowButtons(parent);
+  </script>
+</body>
+
+</html>
